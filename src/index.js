@@ -62,13 +62,13 @@ class ReactNativeModal extends Component {
     scrollOffsetMax: PropTypes.number,
     scrollHorizontal: PropTypes.bool,
     supportedOrientations: PropTypes.arrayOf(
-      PropTypes.oneOf([
-        'portrait',
-        'portrait-upside-down',
-        'landscape',
-        'landscape-left',
-        'landscape-right',
-      ])
+        PropTypes.oneOf([
+          'portrait',
+          'portrait-upside-down',
+          'landscape',
+          'landscape-left',
+          'landscape-right',
+        ])
     ),
   };
 
@@ -146,20 +146,20 @@ class ReactNativeModal extends Component {
       this.setState({ isVisible: true, showContent: true });
     }
     if (
-      this.props.animationIn !== nextProps.animationIn ||
-      this.props.animationOut !== nextProps.animationOut
+        this.props.animationIn !== nextProps.animationIn ||
+        this.props.animationOut !== nextProps.animationOut
     ) {
       const { animationIn, animationOut } = buildAnimations(nextProps);
       this.animationIn = animationIn;
       this.animationOut = animationOut;
     }
     if (
-      this.props.backdropOpacity !== nextProps.backdropOpacity &&
-      this.backdropRef
+        this.props.backdropOpacity !== nextProps.backdropOpacity &&
+        this.backdropRef
     ) {
       this.backdropRef.transitionTo(
-        { opacity: nextProps.backdropOpacity },
-        this.props.backdropTransitionInTiming
+          { opacity: nextProps.backdropOpacity },
+          this.props.backdropTransitionInTiming
       );
     }
   }
@@ -168,22 +168,22 @@ class ReactNativeModal extends Component {
     // Show deprecation message
     if (this.props.onSwipe) {
       console.warn(
-        '`<Modal onSwipe="..." />` is deprecated. Use `<Modal onSwipeComplete="..." />` instead.'
+          '`<Modal onSwipe="..." />` is deprecated. Use `<Modal onSwipeComplete="..." />` instead.'
       );
     }
     if (this.state.isVisible) {
       this.open();
     }
     DeviceEventEmitter.addListener(
-      'didUpdateDimensions',
-      this.handleDimensionsUpdate
+        'didUpdateDimensions',
+        this.handleDimensionsUpdate
     );
   }
 
   componentWillUnmount() {
     DeviceEventEmitter.removeListener(
-      'didUpdateDimensions',
-      this.handleDimensionsUpdate
+        'didUpdateDimensions',
+        this.handleDimensionsUpdate
     );
   }
 
@@ -202,28 +202,35 @@ class ReactNativeModal extends Component {
 
     this.panResponder = PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Use propagateSwipe to allow inner content to scroll. See PR:
-        // https://github.com/react-native-community/react-native-modal/pull/246
-        if (!this.props.propagateSwipe) {
-          // The number "4" is just a good tradeoff to make the panResponder
-          // work correctly even when the modal has touchable buttons.
-          // For reference:
-          // https://github.com/react-native-community/react-native-modal/pull/197
-          const shouldSetPanResponder =
-            Math.abs(gestureState.dx) >= 4 || Math.abs(gestureState.dy) >= 4;
-          if (shouldSetPanResponder && this.props.onSwipeStart) {
+
+        // The minimum distance a swipe must cover over an axis before it registers as a swipe in that direction
+        const swipeAxisSensitivityThreshold = 30;
+
+        if (
+            ((this.props.swipeDirection === 'left' || this.props.swipeDirection === 'right') && Math.abs(gestureState.dx) >= swipeAxisSensitivityThreshold) ||
+            ((this.props.swipeDirection === 'up' || this.props.swipeDirection === 'down') && Math.abs(gestureState.dy) >= swipeAxisSensitivityThreshold)
+        ) {
+
+          if (this.props.onSwipeStart) {
             this.props.onSwipeStart();
           }
 
           this.currentSwipingDirection = this.getSwipingDirection(gestureState);
           animEvt = this.createAnimationEventForSwipe();
-          return shouldSetPanResponder;
+
+          return true;
+
         }
+
+        return false;
+
       },
       onStartShouldSetPanResponder: () => {
-        if (this.props.scrollTo && this.props.scrollOffset > 0) {
+
+        if (this.props.propagateSwipe || this.props.scrollTo && this.props.scrollOffset > 0) {
           return false; // user needs to be able to scroll content back up
         }
+
         if (this.props.onSwipeStart) {
           this.props.onSwipeStart();
         }
@@ -231,6 +238,7 @@ class ReactNativeModal extends Component {
         // Cleared so that onPanResponderMove can wait to have some delta
         // to work with
         this.currentSwipingDirection = null;
+
         return true;
       },
       onPanResponderMove: (evt, gestureState) => {
@@ -248,12 +256,12 @@ class ReactNativeModal extends Component {
         if (this.isSwipeDirectionAllowed(gestureState)) {
           // Dim the background while swiping the modal
           const newOpacityFactor =
-            1 - this.calcDistancePercentage(gestureState);
+              1 - this.calcDistancePercentage(gestureState);
 
           this.backdropRef &&
-            this.backdropRef.transitionTo({
-              opacity: this.props.backdropOpacity * newOpacityFactor,
-            });
+          this.backdropRef.transitionTo({
+            opacity: this.props.backdropOpacity * newOpacityFactor,
+          });
 
           animEvt(evt, gestureState);
 
@@ -284,8 +292,8 @@ class ReactNativeModal extends Component {
         // Call the onSwipe prop if the threshold has been exceeded on the right direction
         const accDistance = this.getAccDistancePerDirection(gestureState);
         if (
-          accDistance > this.props.swipeThreshold &&
-          this.isSwipeDirectionAllowed(gestureState)
+            accDistance > this.props.swipeThreshold &&
+            this.isSwipeDirectionAllowed(gestureState)
         ) {
           if (this.props.onSwipeComplete) {
             this.inSwipeClosingState = true;
@@ -352,9 +360,9 @@ class ReactNativeModal extends Component {
     switch (this.currentSwipingDirection) {
       case 'down':
         return (
-          (gestureState.moveY - gestureState.y0) /
-          ((this.props.deviceHeight || this.state.deviceHeight) -
-            gestureState.y0)
+            (gestureState.moveY - gestureState.y0) /
+            ((this.props.deviceHeight || this.state.deviceHeight) -
+                gestureState.y0)
         );
       case 'up':
         return reversePercentage(gestureState.moveY / gestureState.y0);
@@ -362,8 +370,8 @@ class ReactNativeModal extends Component {
         return reversePercentage(gestureState.moveX / gestureState.x0);
       case 'right':
         return (
-          (gestureState.moveX - gestureState.x0) /
-          ((this.props.deviceWidth || this.state.deviceWidth) - gestureState.x0)
+            (gestureState.moveX - gestureState.x0) /
+            ((this.props.deviceWidth || this.state.deviceWidth) - gestureState.x0)
         );
 
       default:
@@ -373,8 +381,8 @@ class ReactNativeModal extends Component {
 
   createAnimationEventForSwipe = () => {
     if (
-      this.currentSwipingDirection === 'right' ||
-      this.currentSwipingDirection === 'left'
+        this.currentSwipingDirection === 'right' ||
+        this.currentSwipingDirection === 'left'
     ) {
       return Animated.event([null, { dx: this.state.pan.x }]);
     } else {
@@ -384,8 +392,8 @@ class ReactNativeModal extends Component {
 
   isDirectionIncluded = direction => {
     return Array.isArray(this.props.swipeDirection)
-      ? this.props.swipeDirection.includes(direction)
-      : this.props.swipeDirection === direction;
+        ? this.props.swipeDirection.includes(direction)
+        : this.props.swipeDirection === direction;
   };
 
   isSwipeDirectionAllowed = ({ dy, dx }) => {
@@ -395,27 +403,27 @@ class ReactNativeModal extends Component {
     const draggedRight = dx > 0;
 
     if (
-      this.currentSwipingDirection === 'up' &&
-      this.isDirectionIncluded('up') &&
-      draggedUp
+        this.currentSwipingDirection === 'up' &&
+        this.isDirectionIncluded('up') &&
+        draggedUp
     ) {
       return true;
     } else if (
-      this.currentSwipingDirection === 'down' &&
-      this.isDirectionIncluded('down') &&
-      draggedDown
+        this.currentSwipingDirection === 'down' &&
+        this.isDirectionIncluded('down') &&
+        draggedDown
     ) {
       return true;
     } else if (
-      this.currentSwipingDirection === 'right' &&
-      this.isDirectionIncluded('right') &&
-      draggedRight
+        this.currentSwipingDirection === 'right' &&
+        this.isDirectionIncluded('right') &&
+        draggedRight
     ) {
       return true;
     } else if (
-      this.currentSwipingDirection === 'left' &&
-      this.isDirectionIncluded('left') &&
-      draggedLeft
+        this.currentSwipingDirection === 'left' &&
+        this.isDirectionIncluded('left') &&
+        draggedLeft
     ) {
       return true;
     }
@@ -429,8 +437,8 @@ class ReactNativeModal extends Component {
       const deviceWidth = Dimensions.get('window').width;
       const deviceHeight = Dimensions.get('window').height;
       if (
-        deviceWidth !== this.state.deviceWidth ||
-        deviceHeight !== this.state.deviceHeight
+          deviceWidth !== this.state.deviceWidth ||
+          deviceHeight !== this.state.deviceHeight
       ) {
         this.setState({ deviceWidth, deviceHeight });
       }
@@ -444,8 +452,8 @@ class ReactNativeModal extends Component {
     this.isTransitioning = true;
     if (this.backdropRef) {
       this.backdropRef.transitionTo(
-        { opacity: this.props.backdropOpacity },
-        this.props.backdropTransitionInTiming
+          { opacity: this.props.backdropOpacity },
+          this.props.backdropTransitionInTiming
       );
     }
 
@@ -459,14 +467,14 @@ class ReactNativeModal extends Component {
     if (this.contentRef) {
       this.props.onModalWillShow && this.props.onModalWillShow();
       this.contentRef[this.animationIn](this.props.animationInTiming).then(
-        () => {
-          this.isTransitioning = false;
-          if (!this.props.isVisible) {
-            this.close();
-          } else {
-            this.props.onModalShow();
+          () => {
+            this.isTransitioning = false;
+            if (!this.props.isVisible) {
+              this.close();
+            } else {
+              this.props.onModalShow();
+            }
           }
-        }
       );
     }
   };
@@ -478,8 +486,8 @@ class ReactNativeModal extends Component {
     this.isTransitioning = true;
     if (this.backdropRef) {
       this.backdropRef.transitionTo(
-        { opacity: 0 },
-        this.props.backdropTransitionOutTiming
+          { opacity: 0 },
+          this.props.backdropTransitionOutTiming
       );
     }
 
@@ -506,19 +514,19 @@ class ReactNativeModal extends Component {
           this.open();
         } else {
           this.setState(
-            {
-              showContent: false,
-            },
-            () => {
-              this.setState(
-                {
-                  isVisible: false,
-                },
-                () => {
-                  this.props.onModalHide();
-                }
-              );
-            }
+              {
+                showContent: false,
+              },
+              () => {
+                this.setState(
+                    {
+                      isVisible: false,
+                    },
+                    () => {
+                      this.props.onModalHide();
+                    }
+                );
+              }
           );
         }
       });
@@ -574,82 +582,81 @@ class ReactNativeModal extends Component {
     }
 
     const _children =
-      this.props.hideModalContentWhileAnimating &&
-      this.props.useNativeDriver &&
-      !this.state.showContent ? (
-        <animatable.View />
-      ) : (
-        children
-      );
+        this.props.hideModalContentWhileAnimating &&
+        this.props.useNativeDriver &&
+        !this.state.showContent ? (
+            <animatable.View />
+        ) : (
+            children
+        );
     const containerView = (
-      <animatable.View
-        {...panHandlers}
-        ref={ref => (this.contentRef = ref)}
-        style={[panPosition, computedStyle]}
-        pointerEvents="box-none"
-        useNativeDriver={useNativeDriver}
-        {...otherProps}
-      >
-        {_children}
-      </animatable.View>
+        <animatable.View
+            {...panHandlers}
+            ref={ref => (this.contentRef = ref)}
+            style={[panPosition, computedStyle]}
+            pointerEvents="box-none"
+            useNativeDriver={useNativeDriver}
+            {...otherProps}
+        >
+          {_children}
+        </animatable.View>
     );
 
     const backdrop = (
-      <TouchableWithoutFeedback onPress={onBackdropPress}>
-        <animatable.View
-          ref={ref => (this.backdropRef = ref)}
-          useNativeDriver={useNativeDriver}
-          style={[
-            styles.backdrop,
-            {
-              backgroundColor: this.state.showContent
-                ? backdropColor
-                : 'transparent',
-              width: deviceWidth,
-              height: deviceHeight,
-            },
-          ]}
-        />
-      </TouchableWithoutFeedback>
+        <TouchableWithoutFeedback onPress={onBackdropPress}>
+          <animatable.View
+              ref={ref => (this.backdropRef = ref)}
+              useNativeDriver={useNativeDriver}
+              style={[
+                styles.backdrop, {
+                  backgroundColor: this.state.showContent
+                      ? backdropColor
+                      : 'transparent',
+                  width: deviceWidth,
+                  height: deviceHeight,
+                },
+              ]}
+          />
+        </TouchableWithoutFeedback>
     );
 
     if (!coverScreen && this.state.isVisible) {
       return (
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.backdrop,
-            { zIndex: 2, opacity: 1, backgroundColor: 'transparent' },
-          ]}
-        >
-          {hasBackdrop && backdrop}
-          {containerView}
-        </View>
+          <View
+              pointerEvents="box-none"
+              style={[
+                styles.backdrop,
+                { zIndex: 2, opacity: 1, backgroundColor: 'transparent' },
+              ]}
+          >
+            {hasBackdrop && backdrop}
+            {containerView}
+          </View>
       );
     }
 
     return (
-      <Modal
-        transparent={true}
-        animationType={'none'}
-        visible={this.state.isVisible}
-        onRequestClose={onBackButtonPress}
-        {...otherProps}
-      >
-        {hasBackdrop && backdrop}
+        <Modal
+            transparent={true}
+            animationType={'none'}
+            visible={this.state.isVisible}
+            onRequestClose={onBackButtonPress}
+            {...otherProps}
+        >
+          {hasBackdrop && backdrop}
 
-        {avoidKeyboard && (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : null}
-            pointerEvents="box-none"
-            style={computedStyle.concat([{ margin: 0 }])}
-          >
-            {containerView}
-          </KeyboardAvoidingView>
-        )}
+          {avoidKeyboard && (
+              <KeyboardAvoidingView
+                  behavior={Platform.OS === 'ios' ? 'padding' : null}
+                  pointerEvents="box-none"
+                  style={computedStyle.concat([{ margin: 0 }])}
+              >
+                {containerView}
+              </KeyboardAvoidingView>
+          )}
 
-        {!avoidKeyboard && containerView}
-      </Modal>
+          {!avoidKeyboard && containerView}
+        </Modal>
     );
   }
 }
