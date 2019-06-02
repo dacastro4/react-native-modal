@@ -40,10 +40,6 @@ class ReactNativeModal extends Component {
         isVisible: PropTypes.bool.isRequired,
         hideModalContentWhileAnimating: PropTypes.bool,
         propagateSwipe: PropTypes.bool,
-        propagateSwipeTo: PropTypes.oneOfType([
-            PropTypes.arrayOf(PropTypes.oneOf(['up', 'down', 'left', 'right'])),
-            PropTypes.oneOf(['up', 'down', 'left', 'right']),
-        ]),
         onModalShow: PropTypes.func,
         onModalWillShow: PropTypes.func,
         onModalHide: PropTypes.func,
@@ -97,7 +93,6 @@ class ReactNativeModal extends Component {
         isVisible: false,
         hideModalContentWhileAnimating: false,
         propagateSwipe: PropTypes.false,
-        propagateSwipeTo: null,
         onBackdropPress: () => null,
         onBackButtonPress: () => null,
         swipeThreshold: 100,
@@ -204,24 +199,16 @@ class ReactNativeModal extends Component {
 
     buildPanResponder = () => {
         let animEvt = null;
-        console.log(Array.isArray(this.props.swipeDirection), this.props.swipeDirection);
+
         this.panResponder = PanResponder.create({
             onMoveShouldSetPanResponder: (evt, gestureState) => {
 
                 // The minimum distance a swipe must cover over an axis before it registers as a swipe in that direction
-                const swipeAxisSensitivityThreshold = 4;
-
-                const isHorizontal = Array.isArray(this.props.swipeDirection)
-                    ? this.props.swipeDirection.includes("left") || this.props.swipeDirection.includes("right")
-                    : (this.props.swipeDirection === 'left' || this.props.swipeDirection === 'right')
-
-                const isVertical = Array.isArray(this.props.swipeDirection)
-                    ? this.props.swipeDirection.includes("up") || this.props.swipeDirection.includes("down")
-                    : (this.props.swipeDirection === 'up' || this.props.swipeDirection === 'down')
+                const swipeAxisSensitivityThreshold = 30;
 
                 if (
-                    ((isHorizontal) && Math.abs(gestureState.dx) >= swipeAxisSensitivityThreshold) ||
-                    (isVertical && Math.abs(gestureState.dy) >= swipeAxisSensitivityThreshold)
+                    ((this.props.swipeDirection === 'left' || this.props.swipeDirection === 'right') && Math.abs(gestureState.dx) >= swipeAxisSensitivityThreshold) ||
+                    ((this.props.swipeDirection === 'up' || this.props.swipeDirection === 'down') && Math.abs(gestureState.dy) >= swipeAxisSensitivityThreshold)
                 ) {
 
                     if (this.props.onSwipeStart) {
@@ -242,10 +229,6 @@ class ReactNativeModal extends Component {
 
                 if (this.props.propagateSwipe || this.props.scrollTo && this.props.scrollOffset > 0) {
                     return false; // user needs to be able to scroll content back up
-                }
-
-                if(this.props.propagateSwipeTo && this.props.propagateSwipeTo.includes(this.currentSwipingDirection)) {
-                    return false //only propagate to certain directions
                 }
 
                 if (this.props.onSwipeStart) {
@@ -625,7 +608,8 @@ class ReactNativeModal extends Component {
                     ref={ref => (this.backdropRef = ref)}
                     useNativeDriver={useNativeDriver}
                     style={[
-                        styles.backdrop, {
+                        styles.backdrop,
+                        {
                             backgroundColor: this.state.showContent
                                 ? backdropColor
                                 : 'transparent',
